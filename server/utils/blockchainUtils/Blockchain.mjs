@@ -1,5 +1,6 @@
 import Block from './Block.mjs';
 import { verifyTransaction, computeMerkleRoot, getTargetByDifficulty } from './helpers.mjs';  
+import { saveBlock } from '../mongoUtils/blockUtils.mjs';
 
 class Blockchain {
   constructor(difficulty = 4, miningReward = 100) {
@@ -36,7 +37,7 @@ class Blockchain {
     this.pendingTransactions.push(transaction);
   }
 
-  minePendingTransactions(minerAddress) {
+  async minePendingTransactions(minerAddress) {
     console.log(`Mining started... Difficulty: ${this.difficulty}`);
     console.log(`Pending transactions: ${JSON.stringify(this.pendingTransactions)}`);
 
@@ -67,6 +68,7 @@ class Blockchain {
 
     console.log(`Block mined! Block Hash: ${newBlock.hash}`);
     this.chain.push(newBlock);
+    await saveBlock(newBlock);
 
     console.log("Mining completed. Resetting pending transactions.");
     this.pendingTransactions = [];

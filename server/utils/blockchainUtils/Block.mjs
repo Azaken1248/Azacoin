@@ -1,11 +1,11 @@
-import { hashDigest, getHashCode } from "../../dependencies/azahash.mjs";
+//import { hashDigest, getHashCode } from "../../dependencies/azahash.mjs";
 import { hexToBigInt } from "./helpers.mjs";
 
-//import crypto from "crypto";
+import crypto from "crypto";
 
-// function sha256(data) {
-//   return crypto.createHash("sha256").update(data).digest("hex");
-// }
+function sha256(data) {
+  return crypto.createHash("sha256").update(data).digest("hex");
+}
 
 class Block {
   constructor(version, previousHash, merkleRoot, timestamp, target, nonce, transactionCounter, transactionDetails) {
@@ -22,7 +22,9 @@ class Block {
 
   calculateHash() {
     const data = this.version + this.previousHash + this.merkleRoot + this.timestamp + this.target + this.nonce + this.transactionCounter + JSON.stringify(this.transactionDetails);
-    return getHashCode(hashDigest(data));
+    
+    return sha256(data)
+    //return getHashCode(hashDigest(data));
   }
 
   mine() {
