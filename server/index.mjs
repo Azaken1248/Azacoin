@@ -1,21 +1,24 @@
-import Blockchain from "./utils/blockchainUtils/Blockchain.mjs";
-import { getKeys, signTransaction } from "./utils/blockchainUtils/helpers.mjs";
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import userRoutes from "./routes/userRouter.mjs";
+import chainRoutes from "./routes/chainRouter.mjs";
 
-const { privateKey, publicKey } = getKeys();
-const azaChain = new Blockchain();
+dotenv.config();
 
-const txData = { from: "alice", to: "bob", amount: 20 };
-const txString = JSON.stringify(txData);
-const signature = signTransaction(txString, privateKey);
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-azaChain.addTransaction({ ...txData, signature, publicKey });
+app.use(express.json());
+app.use(cors());
 
-const tx2 = { from: "bob", to: "carol", amount: 5 };
-const tx2String = JSON.stringify(tx2);
-const signature2 = signTransaction(tx2String, privateKey);
-azaChain.addTransaction({ ...tx2, signature: signature2, publicKey });
+app.use("/user", userRoutes);
+app.use("/chain", chainRoutes);
 
-azaChain.minePendingTransactions("miner1");
+app.get("/", (_req, res) => {
+  res.send("AzaChain API is running 🚀");
+});
 
-console.log("Balance of miner1:", azaChain.getBalanceOfAddress("miner1"));
-console.log("Is chain valid?", azaChain.isChainValid());
+app.listen(PORT, () => {
+  console.log(`✅ Server listening on port ${PORT}`);
+});
