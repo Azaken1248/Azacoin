@@ -35,10 +35,9 @@ class Blockchain {
   addTransaction(transaction) {
     const { from, to, amount, publicKey, signature } = transaction;
     const message = JSON.stringify({ from, to, amount });
-  
-    const fullPublicKey = `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`;
+
     
-    const isValid = verifyTransaction(message, signature, fullPublicKey);
+    const isValid = verifyTransaction(message, signature, publicKey);
   
     if (!isValid) {
       throw new Error("Invalid transaction signature");
@@ -83,7 +82,8 @@ class Blockchain {
     console.log(`Block mined! Block Hash: ${newBlock.hash}`);
     this.chain.push(newBlock);
     await saveBlock(newBlock);
-  
+    this.syncChainWithMongo();
+
     this.adjustDifficulty();
   
     console.log("Mining completed. Resetting pending transactions.");
@@ -101,16 +101,33 @@ class Blockchain {
     return true;
   }
 
+  normalizeKey(key) {
+    return key.replace(/(\r\n|\n|\r|\s)/gm, '');
+  }
+  
   getBalanceOfAddress(address) {
     let balance = 0;
+    const normalizedAddress = this.normalizeKey(address);
+  
     for (const block of this.chain) {
       for (const tx of block.transactionDetails) {
-        if (tx.from === address) balance -= tx.amount;
-        if (tx.to === address) balance += tx.amount;
+        const from = this.normalizeKey(tx.from || '');
+        const to = this.normalizeKey(tx.to || '');
+  
+        //console.log("Comparing to:", normalizedAddress);
+        //console.log("From:", from);
+        //console.log("To:", to);
+        //console.log("check1: ", to == normalizedAddress);
+        //console.log("check2: ", from == normalizedAddress);
+  
+        if (from === normalizedAddress) balance -= tx.amount;
+        if (to === normalizedAddress) balance += tx.amount;
       }
     }
     return balance;
   }
+  
+  
 
   adjustDifficulty() {
     const latestBlock = this.getLatestBlock();

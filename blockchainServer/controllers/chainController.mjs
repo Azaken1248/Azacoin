@@ -10,10 +10,7 @@ let serverPublicKey;
 
 try {
   const raw = fs.readFileSync(publicKeyPath, "utf8");
-  serverPublicKey = raw
-    .replace(/-----BEGIN PUBLIC KEY-----/, "")
-    .replace(/-----END PUBLIC KEY-----/, "")
-    .replace(/\r?\n|\r/g, "");
+  serverPublicKey = raw;
   console.log("Server public key loaded for mining.");
 } catch (err) {
   console.error("Failed to load public key from public.pem:", err);
@@ -21,6 +18,7 @@ try {
 
 
 const azaChain = new Blockchain();
+
 
 async function loadBlockchainFromDB() {
   try {
@@ -86,7 +84,8 @@ export async function addTransactionHandler(req, res) {
   const { from, to, amount, publicKey, signature } = req.body;
 
   try {
-    const isValid = verifyTransaction({ from, to, amount }, signature, publicKey);
+    const message = JSON.stringify({ from, to, amount });
+    const isValid = verifyTransaction(message, signature, publicKey);
 
     if (!isValid) {
       return res.status(400).json({ error: "Invalid transaction signature" });
@@ -101,11 +100,10 @@ export async function addTransactionHandler(req, res) {
   }
 }
 
+
 export async function mineBlockHandler(_req, res) {
   try {
-    const newBlock = await azaChain.minePendingTransactions(serverPublicKey); 
-    console.log("⛏ Attempting to save block:", newBlock);
-    await saveBlock(newBlock);
+    const newBlock = await azaChain.minePendingTransactions(serverPublicKey);
     res.status(200).json({ message: "Block mined", block: newBlock });
   } catch (err) {
     res.status(500).json({ error: "Failed to mine block" });

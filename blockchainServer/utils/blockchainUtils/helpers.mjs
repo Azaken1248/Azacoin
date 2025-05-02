@@ -40,41 +40,34 @@ const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
   privateKeyEncoding: { type: "pkcs8", format: "pem" },
 });
 
-function stripPemHeaderFooter(pem) {
-  return pem
-    .replace(/-----BEGIN [\w\s]+-----/g, '')
-    .replace(/-----END [\w\s]+-----/g, '')
-    .replace(/\r?\n|\r/g, '');
-}
 
 export function getKeys() {
   return {
-    privateKey: stripPemHeaderFooter(privateKey),
-    publicKey: stripPemHeaderFooter(publicKey)
+    privateKey: (privateKey),
+    publicKey: (publicKey)
   };
 }
   
   
-  export function signTransaction(message, privateKeyPEM) {
-    const hash = getHashCode(hashDigest(message));
-    const bufferHash = Buffer.from(hash, "hex");
+export function signTransaction(message, privateKeyPEM) {
+  const buffer = Buffer.from(message);
+
+  const signature = crypto.sign("sha256", buffer, {
+    key: privateKeyPEM,
+    padding: crypto.constants.RSA_PKCS1_PADDING,
+  });
+
+  return signature.toString("hex");
+}
+
   
-    const signature = crypto.sign("sha256", bufferHash, {
-      key: privateKeyPEM,
-      padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-    });
-  
-    return signature.toString("hex");
-  }
-  
-  export function verifyTransaction(message, signatureHex, publicKeyPEM) {
-    const hash = getHashCode(hashDigest(message));
-    const bufferHash = Buffer.from(hash, "hex");
-    const signature = Buffer.from(signatureHex, "hex");
-  
-    return crypto.verify("sha256", bufferHash, {
-      key: publicKeyPEM,
-      padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-    }, signature);
-  }
+export function verifyTransaction(message, signatureHex, publicKeyPEM) {
+  const buffer = Buffer.from(message);
+  const signature = Buffer.from(signatureHex, "hex");
+
+  return crypto.verify("sha256", buffer, {
+    key: publicKeyPEM,
+    padding: crypto.constants.RSA_PKCS1_PADDING,
+  }, signature);
+}
   
