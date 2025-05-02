@@ -1,9 +1,6 @@
 import crypto from "crypto";
 import { hashDigest,getHashCode } from "../../dependencies/azahash.mjs";
 
-function sha256(data) {
-  return crypto.createHash("sha256").update(data).digest("hex");
-}
 
 export function hexToBigInt(hex) {
     return BigInt('0x' + hex);
