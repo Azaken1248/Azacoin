@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AzaChain Test Page</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: #ddd; padding: 20px; }
+    input, button, textarea { margin: 5px; padding: 6px; font-size: 1em; }
+    button { cursor: pointer; }
+    textarea { width: 100%; height: 100px; background: #222; color: #ddd; border: 1px solid #444; }
+  </style>
+</head>
+<body>
+
+<h2>🔐 Auth</h2>
+<input id="username" placeholder="Username">
+<input id="password" placeholder="Password" type="password">
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+<p><strong>Token:</strong> <span id="tokenDisplay"></span></p>
+
+<h2>💸 Add Transaction</h2>
+<input id="transactionUsername" placeholder="Username">
+<input id="transactionAmount" placeholder="Amount" type="number">
+<button onclick="addTransaction()">Add Transaction</button>
+
+<h2>📄 Check Balance by Username</h2>
+<input id="balanceUsername" placeholder="Username">
+<button onclick="checkBalance()">Check Balance</button>
+<pre id="balance"></pre>
+
+<h2>⛏️ Mine Block</h2>
+<button onclick="mineBlock()">Mine Block</button>
+
+<h2>📦 All Blocks</h2>
+<button onclick="getBlocks()">View All Blocks</button>
+<textarea readonly id="blocks"></textarea>
+
+<h2>📋 Blockchain Info</h2>
+<button onclick="getChain()">Get Full Blockchain</button>
+<textarea readonly id="chain"></textarea>
+
+<h2>⏳ Pending Transactions</h2>
+<button onclick="getPendingTransactions()">Get Pending Transactions</button>
+<textarea readonly id="pendingTransactions"></textarea>
+
+<script>
+const BASE_URL = "http://localhost:3002";
+let token = "";
+
+function setToken(t) {
+  token = t;
+  document.getElementById("tokenDisplay").textContent = t;
+  localStorage.setItem("token", t);
+}
+
+function getAuthHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`
+  };
+}
+
+async function register() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const res = await fetch(`${BASE_URL}/user/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  alert(JSON.stringify(data, null, 2));
+}
+
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const res = await fetch(`${BASE_URL}/user/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (data.token) {
+    setToken(data.token);
+    alert("Login successful");
+  } else {
+    alert("Login failed: " + JSON.stringify(data));
+  }
+}
+
+async function addTransaction() {
+  const username = document.getElementById("transactionUsername").value;
+  const amount = parseFloat(document.getElementById("transactionAmount").value);
+
+  // Assuming public key and signature are handled server-side for transaction
+  const res = await fetch(`${BASE_URL}/chain/transactions`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ from: username, to: "someReceiver", amount: amount, publicKey: "somePublicKey", signature: "someSignature" })
+  });
+  const data = await res.json();
+  alert(JSON.stringify(data, null, 2));
+}
+
+async function checkBalance() {
+  const username = document.getElementById("balanceUsername").value;
+  const res = await fetch(`${BASE_URL}/chain/balance/${username}`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  document.getElementById("balance").textContent = JSON.stringify(data, null, 2);
+}
+
+async function mineBlock() {
+  const res = await fetch(`${BASE_URL}/chain/mine`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  const data = await res.json();
+  alert(JSON.stringify(data, null, 2));
+}
+
+async function getBlocks() {
+  const res = await fetch(`${BASE_URL}/chain`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  document.getElementById("blocks").value = JSON.stringify(data, null, 2);
+}
+
+async function getChain() {
+  const res = await fetch(`${BASE_URL}/chain`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  document.getElementById("chain").value = JSON.stringify(data, null, 2);
+}
+
+async function getPendingTransactions() {
+  const res = await fetch(`${BASE_URL}/chain/transactions/pending`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  document.getElementById("pendingTransactions").value = JSON.stringify(data, null, 2);
+}
+
+// Load token from localStorage
+window.onload = () => {
+  const stored = localStorage.getItem("token");
+  if (stored) setToken(stored);
+};
+</script>
+
+</body>
+</html>
