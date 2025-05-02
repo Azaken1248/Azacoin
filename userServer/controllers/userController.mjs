@@ -1,7 +1,6 @@
 import { createUser, getAllUsers, getUserByUsername } from "../utils/mongoUtils/userUtils.mjs";
 import { getKeys } from "../utils/blockchainUtils/helpers.mjs";
 import { hashDigest, getHashCode } from "../dependencies/azahash.mjs";
-import { authenticateJWT } from "../middleware/authMiddleware.mjs";
 
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
