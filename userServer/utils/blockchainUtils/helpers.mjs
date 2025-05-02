@@ -1,6 +1,10 @@
 import crypto from "crypto";
 import { hashDigest,getHashCode } from "../../dependencies/azahash.mjs";
 
+function sha256(data) {
+  return crypto.createHash("sha256").update(data).digest("hex");
+}
+
 export function hexToBigInt(hex) {
     return BigInt('0x' + hex);
 }
@@ -34,47 +38,39 @@ export function computeMerkleRoot(transactions) {
   return hashes[0]; 
 }
 
-const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
-  modulusLength: 2048,
-  publicKeyEncoding: { type: "spki", format: "pem" },
-  privateKeyEncoding: { type: "pkcs8", format: "pem" },
-});
-
-function stripPemHeaderFooter(pem) {
-  return pem
-    .replace(/-----BEGIN [\w\s]+-----/g, '')
-    .replace(/-----END [\w\s]+-----/g, '')
-    .replace(/\r?\n|\r/g, '');
-}
-
 export function getKeys() {
+  const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: "spki", format: "pem" },
+    privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  });
+
   return {
-    privateKey: stripPemHeaderFooter(privateKey),
-    publicKey: stripPemHeaderFooter(publicKey)
+    privateKey,
+    publicKey,
   };
 }
   
+export function signTransaction(message, privateKeyPEM) {
+  const buffer = Buffer.from(message);
+
+  const signature = crypto.sign("sha256", buffer, {
+    key: privateKeyPEM,
+    padding: crypto.constants.RSA_PKCS1_PADDING,
+  });
+
+  return signature.toString("hex");
+}
+
   
-  export function signTransaction(message, privateKeyPEM) {
-    const hash = getHashCode(hashDigest(message));
-    const bufferHash = Buffer.from(hash, "hex");
-  
-    const signature = crypto.sign("sha256", bufferHash, {
-      key: privateKeyPEM,
-      padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-    });
-  
-    return signature.toString("hex");
-  }
-  
-  export function verifyTransaction(message, signatureHex, publicKeyPEM) {
-    const hash = getHashCode(hashDigest(message));
-    const bufferHash = Buffer.from(hash, "hex");
-    const signature = Buffer.from(signatureHex, "hex");
-  
-    return crypto.verify("sha256", bufferHash, {
-      key: publicKeyPEM,
-      padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-    }, signature);
-  }
+export function verifyTransaction(message, signatureHex, publicKeyPEM) {
+  const buffer = Buffer.from(message);
+  const signature = Buffer.from(signatureHex, "hex");
+
+  return crypto.verify("sha256", buffer, {
+    key: publicKeyPEM,
+    padding: crypto.constants.RSA_PKCS1_PADDING,
+  }, signature);
+}
+
   
