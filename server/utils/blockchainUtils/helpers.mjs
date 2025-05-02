@@ -35,14 +35,24 @@ export function computeMerkleRoot(transactions) {
 }
 
 const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: "spki", format: "pem" },
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-  });
-  
-  export function getKeys() {
-    return { privateKey, publicKey };
-  }
+  modulusLength: 2048,
+  publicKeyEncoding: { type: "spki", format: "pem" },
+  privateKeyEncoding: { type: "pkcs8", format: "pem" },
+});
+
+function stripPemHeaderFooter(pem) {
+  return pem
+    .replace(/-----BEGIN [\w\s]+-----/g, '')
+    .replace(/-----END [\w\s]+-----/g, '')
+    .replace(/\r?\n|\r/g, '');
+}
+
+export function getKeys() {
+  return {
+    privateKey: stripPemHeaderFooter(privateKey),
+    publicKey: stripPemHeaderFooter(publicKey)
+  };
+}
   
   
   export function signTransaction(message, privateKeyPEM) {

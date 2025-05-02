@@ -17,15 +17,19 @@ try {
   console.error("❌ Failed to connect to MongoDB for blocks:", err);
 }
 
-export async function saveBlock(blockData) {
-  try {
-    const result = await blocks.insertOne(blockData);
-    console.log("✅ Block saved with ID:", result.insertedId);
-    return result.insertedId;
-  } catch (err) {
-    console.error("❌ Error saving block:", err);
-    throw err;
-  }
+export async function saveBlock(block) {
+    if (!block) {
+        console.error("❌ Tried to save undefined block");
+        return;
+    }
+
+    try {
+        const result = await blocks.insertOne(block);
+        console.log("✅ Block saved with ID:", result.insertedId);
+        return result.insertedId;
+    } catch (error) {
+        console.error("❌ Error saving block:", error);
+    }
 }
 
 export async function getAllBlocks() {

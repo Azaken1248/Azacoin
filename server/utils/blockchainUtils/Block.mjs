@@ -8,12 +8,13 @@ function sha256(data) {
 }
 
 class Block {
-  constructor(version, previousHash, merkleRoot, timestamp, target, nonce, transactionCounter, transactionDetails) {
+  constructor(index,version, previousHash, merkleRoot, timestamp, target, nonce, transactionCounter, transactionDetails) {
+    this.index = index;
     this.version = version;
     this.previousHash = previousHash;
     this.merkleRoot = merkleRoot;
     this.timestamp = timestamp || Date.now();
-    this.target = target || "0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    this.target = target || "00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     this.nonce = nonce || 0;
     this.transactionCounter = transactionCounter;
     this.transactionDetails = transactionDetails;
@@ -21,7 +22,7 @@ class Block {
   }
 
   calculateHash() {
-    const data = this.version + this.previousHash + this.merkleRoot + this.timestamp + this.target + this.nonce + this.transactionCounter + JSON.stringify(this.transactionDetails);
+    const data = this.index + this.version + this.previousHash + this.merkleRoot + this.timestamp + this.target + this.nonce + this.transactionCounter + JSON.stringify(this.transactionDetails);
     
     return sha256(data)
     //return getHashCode(hashDigest(data));
