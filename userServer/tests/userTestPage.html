@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User API Test Page (v3 - JWT Auth)</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            margin: 20px;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        h1, h2 {
+            color: #bb86fc; 
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #3c3c3c;
+            border-radius: 6px;
+        }
+        .section h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #555;
+            padding-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #cccccc;
+        }
+        input[type="text"],
+        input[type="password"], 
+        textarea {
+            width: calc(100% - 22px); 
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #4a4a4a;
+            color: #ffffff;
+            font-size: 1em;
+            box-sizing: border-box; 
+        }
+        button {
+            background-color: #03dac6;
+            color: #000;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #018786; 
+        }
+        .response, .token-display {
+            margin-top: 10px;
+            padding: 15px;
+            background-color: #4a4a4a;
+            border-radius: 4px;
+            border: 1px solid #555;
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            max-height: 300px;
+            overflow-y: auto; 
+        }
+         .token-display {
+            background-color: #3a3a3a; 
+            color: #03dac6; 
+            word-break: break-all;
+         }
+        .response pre, .token-display pre {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>User API Test Page (v3 - JWT Auth)</h1>
+
+        <div class="section">
+            <h2>Create User (POST /user/signup)</h2>
+            <label for="signupUsername">Username:</label>
+            <input type="text" id="signupUsername"><br>
+            <label for="signupPassword">Password:</label>
+            <input type="password" id="signupPassword"><br>
+            <button onclick="createUser()">Create User</button>
+        </div>
+
+        <div class="section">
+            <h2>Login User (POST /user/login)</h2>
+            <p>Successful login will get a JWT token needed for fetching users.</p>
+            <label for="loginUsername">Username:</label>
+            <input type="text" id="loginUsername"><br>
+            <label for="loginPassword">Password:</label>
+            <input type="password" id="loginPassword"><br>
+            <button onclick="loginUser()">Login User & Get Token</button>
+            <div id="tokenArea" class="token-display" style="display: none;">
+                <p><strong>Obtained JWT Token:</strong></p>
+                <pre id="jwtToken"></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Get User by Username (GET /user/:username)</h2>
+            <p>Requires a valid JWT token obtained from login.</p>
+            <label for="getUsername">Username:</label>
+            <input type="text" id="getUsername"><br>
+            <button onclick="getUser()">Get User</button>
+        </div>
+
+        <div class="section">
+            <h2>Get All Users (GET /user/)</h2>
+             <p>Requires a valid JWT token obtained from login.</p>
+            <button onclick="getAllUsers()">Get All Users</button>
+        </div>
+
+        <div class="section">
+            <h2>API Response</h2>
+            <div id="responseArea" class="response">
+                <pre>Waiting for API call...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3001/user';
+
+        let authToken = null;
+
+        async function sendRequest(method, endpoint, data = null, requiresAuth = false) {
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+
+            if (requiresAuth) {
+                if (authToken) {
+                    options.headers['Authorization'] = `Bearer ${authToken}`;
+                } else {
+                    document.getElementById('responseArea').innerHTML = '<pre style="color: #ff6b6b;">Error: JWT token is required for this request but is not available. Please log in first.</pre>';
+                    console.error('Authentication required but token not found.');
+                    return; 
+                }
+            }
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            const responseArea = document.getElementById('responseArea');
+            responseArea.innerHTML = '<pre>Loading...</pre>';
+
+            try {
+                const response = await fetch(endpoint, options);
+
+                if (!response.ok) {
+                    let errorText = `HTTP error! status: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                         errorText += `\n\nResponse Body: ${JSON.stringify(errorData, null, 2)}`;
+                    } catch (e) {
+                         const text = await response.text();
+                         errorText += `\n\nResponse Body (non-JSON/parsing error): ${text.substring(0, 500)}...`;
+                    }
+                     responseArea.innerHTML = `<pre style="color: #ff6b6b;">${errorText}</pre>`;
+                     console.error('API Request Failed:', response.status, response.statusText, response);
+
+                     if (response.status === 401) {
+                         authToken = null;
+                         document.getElementById('jwtToken').textContent = 'Token expired or invalid. Please log in again.';
+                         document.getElementById('tokenArea').style.display = 'block'; 
+                     }
+
+                     return; 
+                }
+                const responseData = await response.json();
+                if (endpoint === `${API_BASE_URL}/login` && responseData.token) {
+                    authToken = responseData.token;
+                    document.getElementById('jwtToken').textContent = authToken;
+                    document.getElementById('tokenArea').style.display = 'block';
+                    responseData.message = `Login successful. Token stored for future requests.`; 
+                    delete responseData.token; 
+                }
+
+                const status = response.status;
+                const statusText = response.statusText;
+
+                responseArea.innerHTML = `
+                    <pre>Status: ${status} ${statusText}\n\n${JSON.stringify(responseData, null, 2)}</pre>
+                `;
+            } catch (error) {
+                responseArea.innerHTML = `<pre style="color: #ff6b6b;">Client-side Error during request:\n\n${error.message}\n\nEnsure the server is running and the URL is correct.</pre>`;
+                console.error('Client-side API Request Error:', error);
+            }
+        }
+
+        function createUser() {
+            const username = document.getElementById('signupUsername').value;
+            const password = document.getElementById('signupPassword').value;
+
+            if (!username || !password) {
+                alert('Please fill in username and password for user creation.');
+                return;
+            }
+
+            sendRequest('POST', `${API_BASE_URL}/signup`, { username, password });
+        }
+
+        function loginUser() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                alert('Please enter username and password for login.');
+                return;
+            }
+
+            sendRequest('POST', `${API_BASE_URL}/login`, { username, password }, false);
+        }
+
+        function getUser() {
+            const username = document.getElementById('getUsername').value;
+
+            if (!username) {
+                alert('Please enter a username to fetch.');
+                return;
+            }
+            sendRequest('GET', `${API_BASE_URL}/${username}`, null, false);
+        }
+
+        function getAllUsers() {
+            sendRequest('GET', API_BASE_URL, null, false);
+        }
+
+    </script>
+</body>
+</html>
