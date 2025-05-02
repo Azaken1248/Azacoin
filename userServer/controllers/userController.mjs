@@ -79,6 +79,22 @@ export async function loginUserHandler(req, res) {
   }
 
 
+  export async function getBalanceHandler(req, res) {
+    try {
+      const username = req.params.username;
+      const response = await fetch(`http://localhost:3002/chain/balance/${username}`);
+  
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "User not found or server error" });
+      }
+  
+      const data = await response.json();
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error", details: err.message });
+    }
+  }
+  
 
   export async function requestTransactionHandler(req, res) {
     const { to, amount } = req.body;

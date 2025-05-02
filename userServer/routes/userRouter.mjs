@@ -5,7 +5,8 @@ import {
   getAllUsersHandler,
   getUserHandler,
   loginUserHandler,
-  requestTransactionHandler
+  requestTransactionHandler,
+  getBalanceHandler
 } from "../controllers/userController.mjs";
 
 const userRouter = express.Router();
@@ -13,6 +14,7 @@ const userRouter = express.Router();
 userRouter.post('/request', authenticateJWT, requestTransactionHandler);
 userRouter.post("/signup", createUserHandler);
 userRouter.post("/login", loginUserHandler);
+userRouter.get('/balance/:username', getBalanceHandler);
 userRouter.get("/:username", getUserHandler);
 userRouter.get("/", getAllUsersHandler);
 
