@@ -1,6 +1,8 @@
+import fetch from "node-fetch"; 
 import { createUser, getAllUsers, getUserByUsername } from "../utils/mongoUtils/userUtils.mjs";
 import { getKeys } from "../utils/blockchainUtils/helpers.mjs";
 import { hashDigest, getHashCode } from "../dependencies/azahash.mjs";
+import { signTransaction } from "../utils/blockchainUtils/helpers.mjs"; 
 
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -75,4 +77,65 @@ export async function loginUserHandler(req, res) {
       res.status(500).json({ error: "Failed to fetch users" });
     }
   }
+
+
+
+  export async function requestTransactionHandler(req, res) {
+    const { to, amount } = req.body;
+    const from = req.user.username;
+    
+  
+    try {
+      const sender = await getUserByUsername(from); 
+      const reciever = await getUserByUsername(to);
+
+      if (!sender) {
+        return res.status(400).json({ error: "User not found" });
+      }
+      if (!sender.publicKey) {
+        return res.status(400).json({ error: "bad public key" });
+      }
+      if(!sender.privateKey){
+        return res.status(400).json({ error: "bad private key" });
+      }
+      
+      
+
+      const publickey = sender.publicKey;
+      const privatekey = sender.privateKey;
+  
+      const message = JSON.stringify({ from: sender.publicKey, to: reciever.publicKey, amount });
+      const signature = signTransaction(message, privatekey);
+
+      
+  
+      const transaction = {
+        from: sender.publicKey,
+        to: reciever.publicKey,
+        amount,
+        publicKey: publickey,
+        signature
+      };
+
+  
+      const response = await fetch("http://localhost:3002/chain/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(transaction),
+      });
+  
+      if (!response.ok) {
+        const error = await response.json();
+        return res.status(400).json({ error: error.error || "Failed to add transaction" });
+      }
+  
+      const data = await response.json();
+      return res.status(200).json({ message: "Transaction successfully processed", data });
+  
+    } catch (err) {
+      console.error("Error processing transaction:", err);
+      return res.status(500).json({ error: "Failed to request transaction" });
+    }
+  }
+  
   
