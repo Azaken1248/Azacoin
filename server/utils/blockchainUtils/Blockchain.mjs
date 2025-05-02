@@ -13,10 +13,21 @@ class Blockchain {
   }
 
   createGenesisBlock() {
-    const genesisTx = [{ from: "genesis", to: "network", amount: 0 }];
+    const genesisTx = [{ from: "network", to: "network", amount: 0 }];
     const merkleRoot = computeMerkleRoot(genesisTx);
-    return new Block(1, "0".repeat(64), merkleRoot, Date.now(), "00ffff", 0, 1, genesisTx);
+    return new Block(
+      1,                    
+      1,                    
+      "0".repeat(64),      
+      merkleRoot,          
+      Date.now(),           
+      "00ffff",             
+      0,                    
+      genesisTx.length,     
+      genesisTx             
+    );
   }
+  
 
   getLatestBlock() {
     return this.chain[this.chain.length - 1];
@@ -97,9 +108,10 @@ class Blockchain {
   getBalanceOfAddress(address) {
     let balance = 0;
     for (const block of this.chain) {
+      //console.log("block: ", block);
       for (const tx of block.transactionDetails) {
-        if (tx.from === address) balance -= tx.amount;
-        if (tx.to === address) balance += tx.amount;
+        if (tx.from == address) balance -= tx.amount;
+        if (tx.to == address) balance += tx.amount;
       }
     }
     return balance;

@@ -28,8 +28,9 @@
 <h2>⛏️ Mine Block</h2>
 <button onclick="mineBlock()">Mine Block</button>
 
-<h2>💰 Get Balance</h2>
-<button onclick="getBalance()">Get My Balance</button>
+<h2>📄 Get Balance from PEM File</h2>
+<input type="file" id="pubkeyFile" accept=".pem">
+<button onclick="loadPemAndFetchBalance()">Load PEM & Get Balance</button>
 <pre id="balance"></pre>
 
 <h2>📦 All Blocks</h2>
@@ -39,6 +40,14 @@
 <script>
 const BASE_URL = "http://localhost:3000";
 let token = "";
+
+function stripPemHeaders(pem) {
+  return pem
+    .replace(/-----BEGIN PUBLIC KEY-----/, '')
+    .replace(/-----END PUBLIC KEY-----/, '')
+    .replace(/\r?\n|\r/g, '')
+    .trim();
+}
 
 function setToken(t) {
   token = t;
@@ -104,12 +113,30 @@ async function mineBlock() {
   alert(JSON.stringify(data, null, 2));
 }
 
-async function getBalance() {
-  const res = await fetch(`${BASE_URL}/chain/balance/any`, {
-    headers: getAuthHeaders()
-  });
-  const data = await res.json();
-  document.getElementById("balance").textContent = JSON.stringify(data, null, 2);
+function loadPemAndFetchBalance() {
+  const fileInput = document.getElementById("pubkeyFile");
+  if (!fileInput.files[0]) {
+    alert("Please select a PEM file.");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async function (e) {
+    const rawPem = e.target.result;
+    const pubKey = stripPemHeaders(rawPem);
+
+    try {
+      const res = await fetch(`${BASE_URL}/chain/balance/${encodeURIComponent(pubKey)}`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      document.getElementById("balance").textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      alert("Failed to fetch balance: " + err.message);
+    }
+  };
+  reader.readAsText(fileInput.files[0]);
 }
 
 async function getBlocks() {

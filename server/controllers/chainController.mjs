@@ -34,6 +34,7 @@ async function loadBlockchainFromDB() {
         savedBlocks.sort((a, b) => a.index - b.index);
         azaChain.chain = savedBlocks.map(block =>
           new Block(
+            block.index,
             block.version,
             block.previousHash,
             block.merkleRoot,
@@ -85,13 +86,13 @@ export const addTransactionHandler = [
 
 export const getBalanceHandler = [
     authenticateJWT,
-    async (req, res) => {
-      try {
-        const user = await getUserByUsername(req.user.username);
-        if (!user) return res.status(404).json({ error: "User not found" });
-        console.log(user.publicKey);
-        const balance = azaChain.getBalanceOfAddress(user.publicKey);
-        res.json({ address: user.publicKey, balance });
+    async (_req, res) => {
+        console.log("network:", azaChain.getBalanceOfAddress("network")); 
+        console.log("server:", azaChain.getBalanceOfAddress(serverPublicKey)); 
+    try {
+
+        const balance = azaChain.getBalanceOfAddress(serverPublicKey);
+        res.json({ address: serverPublicKey, balance });
       } catch (err) {
         res.status(500).json({ error: err });
       }
